@@ -1,0 +1,37 @@
+{
+    "courses": [
+      {
+        "course_code": "CS101",
+        "course_name": "Introduction to Computer Science",
+        "schedule": [
+          {
+            "day": "Monday",
+            "time": "10:00 AM - 11:30 AM",
+            "location": "Room 101"
+          },
+          {
+            "day": "Wednesday",
+            "time": "10:00 AM - 11:30 AM",
+            "location": "Room 101"
+          }
+        ]
+      },
+      {
+        "course_code": "MATH201",
+        "course_name": "Calculus I",
+        "schedule": [
+          {
+            "day": "Tuesday",
+            "time": "9:00 AM - 10:30 AM",
+            "location": "Room 202"
+          },
+          {
+            "day": "Thursday",
+            "time": "9:00 AM - 10:30 AM",
+            "location": "Room 202"
+          }
+        ]
+      }
+    ]
+  }
+  

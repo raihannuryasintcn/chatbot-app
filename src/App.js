@@ -86,7 +86,7 @@ const ChatBot = () => {
     setMessages(prev => [...prev, { type: 'user', content: question }]);
 
     try {
-      const response = await fetch('https://chatbot-backend-slua.onrender.com/chat', {
+      const response = await fetch('https://chatbot-backend-production-783e.up.railway.app/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question })

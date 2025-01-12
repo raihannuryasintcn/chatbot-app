@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from './components/ui/card';
 import { Send, Loader2, Settings } from 'lucide-react';
 import './index.css';
@@ -103,7 +103,7 @@ const ChatBot = () => {
       const queryParams = new URLSearchParams(settings);
 
       const response = await fetch(
-        `http://192.168.0.121:8080/chat?${queryParams}`,
+        `http://localhost:8080/chat?${queryParams}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from './components/ui/card';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, Settings } from 'lucide-react';
 import './index.css';
 
 // Landing Page Component
@@ -61,7 +61,12 @@ const ChatBot = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
-
+  const [settings, setSettings] = useState({
+    lang: 'id',
+    mode: 'normal',
+    threshold: '0.5'
+  });
+  const [showSettings, setShowSettings] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -70,6 +75,14 @@ const ChatBot = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const handleSettingsChange = (e) => {
+    const { name, value } = e.target;
+    setSettings(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -86,19 +99,40 @@ const ChatBot = () => {
     setMessages(prev => [...prev, { type: 'user', content: question }]);
 
     try {
-      const response = await fetch('https://chatbot-backend-production-783e.up.railway.app/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question })
-      });
+      // Membuat query parameters dari settings
+      const queryParams = new URLSearchParams(settings);
 
-      if (!response.ok) throw new Error('Network response was not ok');
+      const response = await fetch(
+        `http://192.168.0.121:8080/chat?${queryParams}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
       
       const data = await response.json();
-      setMessages(prev => [...prev, { type: 'bot', content: data.response }]);
+      
+      // Tambahkan informasi tambahan ke pesan bot
+      const botResponse = {
+        type: 'bot',
+        content: data.response,
+        metadata: {
+          similarity: data.similarity_score,
+          processed_question: data.processed_question,
+          status: data.status
+        }
+      };
+      
+      setMessages(prev => [...prev, botResponse]);
       setQuestion('');
     } catch (err) {
       setError('Terjadi kesalahan saat menghubungi server.');
+      console.error('Error:', err);
     } finally {
       setLoading(false);
     }
@@ -106,8 +140,7 @@ const ChatBot = () => {
 
   return (
     <div className="flex flex-col h-screen max-w-3xl mx-auto p-4">
-
-      <div className="flex items-center mb-4">
+      <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => navigate('/')}
           className="text-green-600 hover:text-green-700 flex items-center"
@@ -117,36 +150,98 @@ const ChatBot = () => {
           </svg>
           Kembali
         </button>
+        
+        <button
+          onClick={() => setShowSettings(!showSettings)}
+          className="text-green-600 hover:text-green-700 flex items-center"
+        >
+          <Settings className="h-5 w-5 mr-1" />
+          Pengaturan
+        </button>
       </div>
 
-        <Card className="flex-1 mb-4 overflow-hidden flex flex-col">
-          <div className="bg-green-600 p-4 text-white">
-            <h1 className="text-2xl font-bold">UMB Schedule ChatBot</h1>
-            <p className="text-sm">Tanyakan jadwal skripsi, kuliah, atau kerja praktek!</p>
-          </div>
-          
-          <CardContent className="flex-1 overflow-y-auto p-4">
-            <div className="space-y-4">
-              {messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[80%] p-3 rounded-lg ${
-                      msg.type === 'user'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    {msg.content}
-                  </div>
-                </div>
-              ))}
-              <div ref={messagesEndRef} />
+      {showSettings && (
+        <Card className="mb-4 p-4">
+          <h3 className="font-semibold mb-3">Pengaturan Chatbot</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Bahasa</label>
+              <select
+                name="lang"
+                value={settings.lang}
+                onChange={handleSettingsChange}
+                className="w-full p-2 border rounded"
+              >
+                <option value="id">Indonesia</option>
+                <option value="en">English</option>
+              </select>
             </div>
-          </CardContent>
+            <div>
+              <label className="block text-sm font-medium mb-1">Mode</label>
+              <select
+                name="mode"
+                value={settings.mode}
+                onChange={handleSettingsChange}
+                className="w-full p-2 border rounded"
+              >
+                <option value="normal">Normal</option>
+                <option value="raw">Raw</option>
+                <option value="delayed">Delayed</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Threshold</label>
+              <input
+                type="number"
+                name="threshold"
+                value={settings.threshold}
+                onChange={handleSettingsChange}
+                min="0"
+                max="1"
+                step="0.1"
+                className="w-full p-2 border rounded"
+              />
+            </div>
+          </div>
         </Card>
+      )}
+
+      <Card className="flex-1 mb-4 overflow-hidden flex flex-col">
+        <div className="bg-green-600 p-4 text-white">
+          <h1 className="text-2xl font-bold">UMB Schedule ChatBot</h1>
+          <p className="text-sm">Tanyakan jadwal skripsi, kuliah, atau kerja praktek!</p>
+        </div>
+        
+        <CardContent className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-4">
+            {messages.map((msg, idx) => (
+              <div
+                key={idx}
+                className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[80%] p-3 rounded-lg ${
+                    msg.type === 'user'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 text-gray-800'
+                  }`}
+                >
+                  {msg.content}
+                  {msg.type === 'bot' && msg.metadata && (
+                    <div className="text-xs text-gray-500 mt-2">
+                      <p>Similarity: {(msg.metadata.similarity * 100).toFixed(1)}%</p>
+                      {settings.mode === 'raw' && (
+                        <p>Processed: {msg.metadata.processed_question}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        </CardContent>
+      </Card>
 
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">
@@ -179,7 +274,6 @@ const ChatBot = () => {
   );
 };
 
-// App Component dengan Routing
 const App = () => {
   return (
     <Router>
